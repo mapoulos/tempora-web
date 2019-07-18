@@ -88,7 +88,7 @@ class TimerUI extends React.Component {
 			elapsedTime: 0,
 			timerLength: 45*60*1000, //15 minutes in ms
 			breakCount: 2,
-			breakLength: 2*1000, //30s
+			breakLength: 20*1000, //20s
 			paused: false,
 			started: false,
 			showSettings: false,
@@ -121,6 +121,8 @@ class TimerUI extends React.Component {
 				audio.play()
 				console.log("on finish in break")
 			}
+
+			breakTimerStart.onUpdate = breakTimerEnd.onUpdate = () => {}
 			this.breaks.push(breakTimerStart)
 			this.breaks.push(breakTimerEnd)
 
@@ -171,9 +173,11 @@ class TimerUI extends React.Component {
 				this.setState((prevState) => {
 					//not started
 					if(!prevState.started) {
+						let audio = new Audio(bellSound)
+						audio.play()
 						this.timer.start()
 						this.populateBreaks()
-						this.breaks.forEach((breakTimer) => {breakTimer.start()})
+						this.breaks.forEach((breakTimer) => {console.log("starting breaks");breakTimer.start()})
 						return {paused: false, playImage: pauseImage, started: true}
 
 					} else {
