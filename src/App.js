@@ -9,7 +9,9 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 //import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
 import Image from 'react-bootstrap/Image';
+import Modal from 'react-bootstrap/Modal';
 
 const API_URL = "https://mp22l1ux2d.execute-api.us-east-1.amazonaws.com/default/tempora-pray-getcatalog"
 
@@ -78,8 +80,11 @@ class TimerUI extends React.Component {
 			paused: false,
 			started: false,
 			playImage: playImage,
-			catalog: {},
-			section: []
+			currentAuthor: "",
+			currentWork: "",
+			currentSection: "", 
+			showSettings: false,
+
 		}
 
 		this.convertMillisecondsToString = this.convertMillisecondsToString.bind(this)
@@ -89,8 +94,12 @@ class TimerUI extends React.Component {
 		let axios = require('axios')
 		axios.get(API_URL)
 			.then((response) => {
+				let catalog = response.data
 				this.setState({
-					catalog: response.data,
+					catalog: catalog,
+					currentAuthor: catalog[0].name,
+					currentWork: catalog[0].works[0].name,
+					currentSection: catalog[0].works[0].sections[0].number
 				})
 			})
 			.catch((e) => {
@@ -114,11 +123,45 @@ class TimerUI extends React.Component {
 	}
 
 	render() {
+		let authors, works, sections = []
+
+		if(this.state.catalog) {
+		authors = this.state.catalog.map((authorObj) => (
+			<option key={authorObj.name}>{authorObj.name}</option>
+		))
+		//object representation of the current author
+		let currentAuthorObject = this.state.catalog
+			.find((authorObj) => (authorObj.name === this.state.currentAuthor))
+		
+		//object representation of the current work
+		let currentWorkObject = currentAuthorObject.works
+			.find((workObj) => (workObj.name === this.state.currentWork))
+
+		//get the works of the current author
+		works = currentAuthorObject
+				.works
+				.map((workObj) => (
+					<option key={currentAuthorObject.name+"-"+workObj.name}>{workObj.name}</option>
+				))
+
+		//get the sections of the currently selected work
+		sections = currentWorkObject.sections.map((sectionObj) => (
+				<option key={sectionObj.number}>{sectionObj.number}</option>
+			))
+		}
+
+		
 
 
 		return(
-			<Container lg={12}>
-				<Row style={{marginTop: "10%", textAlign: "center"}}>
+			<Container style={{marginTop: "10%"}} lg={12}>
+				<Row style={{textAlign: "center"}}>
+					<Col>
+						<Button size="lg" onClick={(evt) => {this.setState({showSettings: true})}} variant="light">{this.state.currentAuthor}, <em>{this.state.currentWork}</em>, {this.state.currentSection}</Button>
+					</Col>
+					
+				</Row>
+				<Row style={{marginTop: "4%", textAlign: "center"}}>
 
 				<Col lg={{span:1, offset:5, marginLeft: "10%"}}>
 					<h1>{this.convertMillisecondsToString(this.state.timerLength-this.state.elapsedTime)}</h1>
@@ -137,6 +180,49 @@ class TimerUI extends React.Component {
 				} src={this.state.playImage} /></Button>
 				<Button variant="light"><Image onClick={() => {this.timer.stop(); this.setState({playImage: playImage})}} src={stopImage}/></Button>
 				</Row>
+				<Modal onHide={(evt) => {this.setState({showSettings: false})}}show={this.state.showSettings}>
+					<Modal.Header closeButton>
+						<Modal.Title>Settings</Modal.Title>
+					</Modal.Header>
+
+					<Modal.Body>
+						<Row style={{}}>
+						<Col lg={8}>
+							<Form>
+								<Form.Row>
+								<Form.Group as={Col}>
+								<Form.Label>Author</Form.Label>
+								<Form.Control as="select" onChange={(evt) => 
+									{this.setState({currentAuthor: evt.target.value})
+								}}>
+									{authors}
+								</Form.Control>
+								</Form.Group>
+
+								<Form.Group as={Col}>
+								<Form.Label>Work</Form.Label>
+								<Form.Control as="select" onChange={(evt) => 
+									{this.setState({currentWork: evt.target.value})
+								}}>
+									{works}
+								</Form.Control>
+								</Form.Group>
+
+								<Form.Group as={Col}>
+								<Form.Label>Section</Form.Label>
+								<Form.Control as="select" onChange={(evt) => 
+									{this.setState({currentSection: evt.target.value})
+								}}>
+									{sections}
+								</Form.Control>
+								</Form.Group>
+								</Form.Row>
+
+							</Form>
+						</Col>
+						</Row>
+					</Modal.Body>
+				</Modal>
 			</Container>
 
 			);
