@@ -1,9 +1,0 @@
-{
-	"function": {
-		"getCatalog": {
-			"service": "Lambda",
-			"providerPlugin": "awscloudformation",
-			"build": true
-		}
-	}
-}
