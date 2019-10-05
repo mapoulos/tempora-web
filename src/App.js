@@ -1,5 +1,4 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 import './bootstrap.min.css';
 import playImage from './images/icons8-play-50.png'
@@ -8,11 +7,11 @@ import stopImage from './images/icons8-stop-50.png'
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import Card from 'react-bootstrap/Card';
+//import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
 import Image from 'react-bootstrap/Image';
 
-
+const API_URL = "https://mp22l1ux2d.execute-api.us-east-1.amazonaws.com/default/tempora-pray-getcatalog"
 
 class Timer {
 	constructor() {
@@ -78,10 +77,25 @@ class TimerUI extends React.Component {
 			timerLength: 15*60*1000, //15 minutes in ms
 			paused: false,
 			started: false,
-			playImage: playImage
+			playImage: playImage,
+			catalog: {},
+			section: []
 		}
 
 		this.convertMillisecondsToString = this.convertMillisecondsToString.bind(this)
+	}
+
+	componentDidMount() {
+		let axios = require('axios')
+		axios.get(API_URL)
+			.then((response) => {
+				this.setState({
+					catalog: response.data,
+				})
+			})
+			.catch((e) => {
+				console.log(e)
+			})
 	}
 
 	convertMillisecondsToString(ms) {
@@ -100,6 +114,8 @@ class TimerUI extends React.Component {
 	}
 
 	render() {
+
+
 		return(
 			<Container lg={12}>
 				<Row style={{marginTop: "10%", textAlign: "center"}}>
@@ -111,15 +127,15 @@ class TimerUI extends React.Component {
 				</Row>
 
 				
-				<Row>
-				<Col lg={{span:1, offset: 5}}><Button variant="secondary"><Image onClick={() => {
+				<Row style={{justifyContent: "center", marginTop: "3%"}}>
+				<Button style={{marginRight: "1%"}} variant="light"><Image onClick={() => {
 						//handle this logic better for pausing, etc.
 						this.timer.start();
 						this.setState((prevState) => (
 							{playImage: pauseImage}))
 					}
-				} src={this.state.playImage} /></Button></Col>
-				<Col lg={1} ><Button variant="secondary"><Image onClick={() => {this.timer.stop()}} src={stopImage}/></Button></Col>
+				} src={this.state.playImage} /></Button>
+				<Button variant="light"><Image onClick={() => {this.timer.stop(); this.setState({playImage: playImage})}} src={stopImage}/></Button>
 				</Row>
 			</Container>
 

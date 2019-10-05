@@ -1,0 +1,14 @@
+{
+    "prod": {
+        "awscloudformation": {
+            "AuthRoleName": "tempora-web-prod-20191005061144-authRole",
+            "UnauthRoleArn": "arn:aws:iam::574865529390:role/tempora-web-prod-20191005061144-unauthRole",
+            "AuthRoleArn": "arn:aws:iam::574865529390:role/tempora-web-prod-20191005061144-authRole",
+            "Region": "us-east-1",
+            "DeploymentBucketName": "tempora-web-prod-20191005061144-deployment",
+            "UnauthRoleName": "tempora-web-prod-20191005061144-unauthRole",
+            "StackName": "tempora-web-prod-20191005061144",
+            "StackId": "arn:aws:cloudformation:us-east-1:574865529390:stack/tempora-web-prod-20191005061144/89b26920-e758-11e9-af6d-0aa554d91bcc"
+        }
+    }
+}
