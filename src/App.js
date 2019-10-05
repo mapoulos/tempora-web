@@ -125,6 +125,7 @@ class TimerUI extends React.Component {
 	}
 
 	render() {
+		//todo, save the full work/author/etc. in state
 		let authors, works, sections = []
 
 		let getURLFromState = () => {
