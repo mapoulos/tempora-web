@@ -82,7 +82,8 @@ class TimerUI extends React.Component {
 			playImage: playImage,
 			currentAuthor: "",
 			currentWork: "",
-			currentSection: "", 
+			currentSection: "",
+			currentURL: "", 
 			showSettings: false,
 
 		}
@@ -99,7 +100,8 @@ class TimerUI extends React.Component {
 					catalog: catalog,
 					currentAuthor: catalog[0].name,
 					currentWork: catalog[0].works[0].name,
-					currentSection: catalog[0].works[0].sections[0].number
+					currentSection: catalog[0].works[0].sections[0].number,
+					currentURL: catalog[0].works[0].sections[0].url
 				})
 			})
 			.catch((e) => {
@@ -125,8 +127,19 @@ class TimerUI extends React.Component {
 	render() {
 		let authors, works, sections = []
 
+		let getURLFromState = () => {
+			let [author, work, section] = [this.state.currentAuthor, this.state.currentWork, this.state.currentSection]
+			return this.state.catalog.find((authorObj) => (authorObj.name === author))
+				.works
+				.find((workObj) => (workObj.name === work))
+				.sections
+				.find((sectionObj) => (sectionObj.number === section)).url
+		};
+		
+		let currentURL = ""
 		if(this.state.catalog) {
-		authors = this.state.catalog.map((authorObj) => (
+			currentURL = getURLFromState()
+			authors = this.state.catalog.map((authorObj) => (
 			<option key={authorObj.name}>{authorObj.name}</option>
 		))
 		//object representation of the current author
@@ -149,6 +162,7 @@ class TimerUI extends React.Component {
 				<option key={sectionObj.number}>{sectionObj.number}</option>
 			))
 		}
+
 
 		
 
@@ -173,12 +187,39 @@ class TimerUI extends React.Component {
 				<Row style={{justifyContent: "center", marginTop: "3%"}}>
 				<Button style={{marginRight: "1%"}} variant="light"><Image onClick={() => {
 						//handle this logic better for pausing, etc.
-						this.timer.start();
-						this.setState((prevState) => (
-							{playImage: pauseImage}))
+						
+						this.setState((prevState) => {
+								if(prevState.started === false) { //need to play
+									this.audio = new Audio(currentURL)
+									this.timer.start();
+									this.audio.play()
+									return {playImage: pauseImage, started: true, paused: false}
+								} else if(prevState.paused === false && prevState.started === true){
+									this.timer.pause()
+									this.audio.pause()
+									return {playImage: playImage, paused: true}
+								} else if(prevState.paused === true && prevState.started === true) {
+									this.timer.start()
+									this.audio.play();
+									return {playImage: pauseImage, started: true, paused: false}
+								}
+							})	
+						
+						
 					}
 				} src={this.state.playImage} /></Button>
-				<Button variant="light"><Image onClick={() => {this.timer.stop(); this.setState({playImage: playImage})}} src={stopImage}/></Button>
+
+				<Button variant="light"><Image onClick={() => {
+					if(this.audio) {
+						this.audio.pause();
+						this.audio.load();
+					}
+					this.timer.stop(); 
+					this.setState({playImage: playImage, started: false, paused: false}
+						)}
+				} 
+
+					src={stopImage}/></Button>
 				</Row>
 				<Modal onHide={(evt) => {this.setState({showSettings: false})}}show={this.state.showSettings}>
 					<Modal.Header closeButton>
@@ -210,8 +251,11 @@ class TimerUI extends React.Component {
 
 								<Form.Group as={Col}>
 								<Form.Label>Section</Form.Label>
-								<Form.Control as="select" onChange={(evt) => 
-									{this.setState({currentSection: evt.target.value})
+								<Form.Control as="select" value={this.state.currentSection} onChange={(evt) => {
+									let value = evt.target.value	
+									this.setState((prevState) =>({
+										currentSection: value										
+										}))
 								}}>
 									{sections}
 								</Form.Control>
