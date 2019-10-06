@@ -14,6 +14,7 @@ import Image from 'react-bootstrap/Image';
 import Modal from 'react-bootstrap/Modal';
 
 const API_URL = "https://mp22l1ux2d.execute-api.us-east-1.amazonaws.com/default/tempora-pray-getcatalog"
+const BELL_URL = "https://s3.amazonaws.com/tempora-pray-web-bucket/bells/Ship_Bell_mono.mp3"
 
 class Timer {
 	constructor() {
@@ -67,9 +68,13 @@ class TimerUI extends React.Component {
 	constructor(props) {
 		super(props)
 
+
+		this.playSounds = this.playSounds.bind(this)
+
 		this.timer = new Timer()
 		this.timer.onFinish = () => {
-			this.setState({elapsedTime: 0})
+			this.playSounds()
+			this.setState({elapsedTime: 0, paused: false, started: false})
 		}
 		this.timer.onUpdate = () => {
 			this.setState({elapsedTime: this.timer.elapsedTime})
@@ -89,6 +94,20 @@ class TimerUI extends React.Component {
 		}
 
 		this.convertMillisecondsToString = this.convertMillisecondsToString.bind(this)
+	}
+
+	playSounds() {
+		this.meditationAudio = new Audio(this.state.currentURL)
+		this.bellAudio = new Audio(BELL_URL)
+		
+		this.bellAudio.onended = () => {
+			this.meditationAudio.onended = () => {
+				this.bellAudio.onended = () => {}
+				this.bellAudio.play()
+			}
+			this.meditationAudio.play()
+		}
+		this.bellAudio.play()
 	}
 
 	componentDidMount() {
@@ -191,17 +210,17 @@ class TimerUI extends React.Component {
 						
 						this.setState((prevState) => {
 								if(prevState.started === false) { //need to play
-									this.audio = new Audio(currentURL)
+									this.playSounds()
 									this.timer.start();
-									this.audio.play()
+									
 									return {playImage: pauseImage, started: true, paused: false}
 								} else if(prevState.paused === false && prevState.started === true){
 									this.timer.pause()
-									this.audio.pause()
+									this.meditationAudio.pause()
 									return {playImage: playImage, paused: true}
 								} else if(prevState.paused === true && prevState.started === true) {
 									this.timer.start()
-									this.audio.play();
+									this.meditationAudio.play();
 									return {playImage: pauseImage, started: true, paused: false}
 								}
 							})	
