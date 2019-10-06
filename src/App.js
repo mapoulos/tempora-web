@@ -33,7 +33,7 @@ class Timer {
 		var elapsedTime = this.elapsedTime
 		this.timeStarted = Date.now()
 		this.intervalId = window.setInterval((timer) => {
-				timer.elapsedTime = Date.now() - timer.timeStarted
+				timer.elapsedTime = Date.now() - timer.timeStarted + elapsedTime
 				if(elapsedTime >= timer.timerLength) {
 					timer.stop()
 
@@ -147,18 +147,8 @@ class TimerUI extends React.Component {
 		//todo, save the full work/author/etc. in state
 		let authors, works, sections = []
 
-		let getURLFromState = () => {
-			let [author, work, section] = [this.state.currentAuthor, this.state.currentWork, this.state.currentSection]
-			return this.state.catalog.find((authorObj) => (authorObj.name === author))
-				.works
-				.find((workObj) => (workObj.name === work))
-				.sections
-				.find((sectionObj) => (sectionObj.number === section)).url
-		};
 		
-		let currentURL = ""
 		if(this.state.catalog) {
-			currentURL = getURLFromState()
 			authors = this.state.catalog.map((authorObj) => (
 			<option key={authorObj.name}>{authorObj.name}</option>
 		))
@@ -212,16 +202,19 @@ class TimerUI extends React.Component {
 								if(prevState.started === false) { //need to play
 									this.playSounds()
 									this.timer.start();
-									
 									return {playImage: pauseImage, started: true, paused: false}
+
 								} else if(prevState.paused === false && prevState.started === true){
 									this.timer.pause()
+									this.bellAudio.pause()
 									this.meditationAudio.pause()
 									return {playImage: playImage, paused: true}
+
 								} else if(prevState.paused === true && prevState.started === true) {
 									this.timer.start()
 									this.meditationAudio.play();
 									return {playImage: pauseImage, started: true, paused: false}
+
 								}
 							})	
 						
@@ -277,9 +270,17 @@ class TimerUI extends React.Component {
 								<Form.Label>Section</Form.Label>
 								<Form.Control as="select" value={this.state.currentSection} onChange={(evt) => {
 									let value = evt.target.value	
-									this.setState((prevState) =>({
-										currentSection: value										
-										}))
+									this.setState((prevState) =>{
+										let [author, work, section] = [this.state.currentAuthor, this.state.currentWork, value]
+										let url= prevState.catalog.find((authorObj) => (authorObj.name === author))
+											.works
+											.find((workObj) => (workObj.name === work))
+											.sections
+											.find((sectionObj) => (sectionObj.number === section)).url
+
+										return {currentSection: value,
+										currentURL: url}										
+										})
 								}}>
 									{sections}
 								</Form.Control>
