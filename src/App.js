@@ -99,7 +99,7 @@ class TimerUI extends React.Component {
 	playSounds() {
 		this.meditationAudio = new Audio(this.state.currentURL)
 		this.bellAudio = new Audio(BELL_URL)
-		
+
 		this.bellAudio.onended = () => {
 			this.meditationAudio.onended = () => {
 				this.bellAudio.onended = () => {}
@@ -230,9 +230,13 @@ class TimerUI extends React.Component {
 				} src={this.state.playImage} /></Button>
 
 				<Button variant="light"><Image onClick={() => {
-					if(this.audio) {
-						this.audio.pause();
-						this.audio.load();
+					if(this.meditationAudio) {
+						this.meditationAudio.pause();
+						this.meditationAudio.load();
+					}
+					if(this.bellAudio) {
+						this.bellAudio.pause();
+						this.bellAudio.load();
 					}
 					this.timer.stop(); 
 					this.setState({playImage: playImage, started: false, paused: false}
