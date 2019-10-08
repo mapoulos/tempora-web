@@ -1,55 +1,51 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 import './bootstrap.min.css';
 import playImage from './images/icons8-play-50.png'
 import pauseImage from './images/icons8-pause-50.png'
 import stopImage from './images/icons8-stop-50.png'
 import Container from 'react-bootstrap/Container';
-import bellSound from './sounds/bell.mp3'
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-import Card from 'react-bootstrap/Card';
+//import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
 import Image from 'react-bootstrap/Image';
 import Modal from 'react-bootstrap/Modal';
-import Form from 'react-bootstrap/Form';
 
+const API_URL = "https://mp22l1ux2d.execute-api.us-east-1.amazonaws.com/default/tempora-pray-getcatalog"
+const BELL_URL = "https://s3.amazonaws.com/tempora-pray-web-bucket/bells/Ship_Bell_mono.mp3"
 
 class Timer {
 	constructor() {
 		this.elapsedTime = 0
-		this.timerLength = 15*60*1000
+		this.timerLength = 1*60*1000
 		this.isRunning = false
 		this.timeStarted = 0
 		this.onFinish = () => {}
 		this.onUpdate = () => {}
 		this.intervalId = 0
-		this.lastUpdate = 0
 	}
 
 	start() {
 		if(this.isRunning === false) {
 			this.isRunning = true
-			//var elapsedTime = this.elapsedTime
-			this.lastUpdate = Date.now()
-
+			var elapsedTime = this.elapsedTime
+			this.timeStarted = Date.now()
 
 			this.intervalId = window.setInterval((timer) => {
-				const currentTime = Date.now()
-				timer.elapsedTime += currentTime - timer.lastUpdate
-				timer.lastUpdate = currentTime
+				timer.elapsedTime = Date.now() - timer.timeStarted + elapsedTime
 				if(timer.elapsedTime >= timer.timerLength) {
 					timer.stop()
-
+					
 					timer.onFinish()
-
+					
 				} else {
 					timer.onUpdate()
 				}
 
 			}, 1000, this)
-		}	
+		}
 	}
 
 
@@ -73,62 +69,116 @@ class TimerUI extends React.Component {
 	constructor(props) {
 		super(props)
 
-		this.timer = new Timer()
-		this.breaks = []
-		this.timer.onFinish = () => {
-			this.setState({elapsedTime: 0})
-			let audio = new Audio(bellSound)
-			audio.play()
 
+		this.playSounds = this.playSounds.bind(this)
+
+		this.timer = new Timer()
+		this.timer.onFinish = () => {
+			this.playSounds()
+			this.setState({elapsedTime: 0, paused: false, started: false})
 		}
 		this.timer.onUpdate = () => {
 			this.setState({elapsedTime: this.timer.elapsedTime})
 		}
 		this.state = {
 			elapsedTime: 0,
-			timerLength: 45*60*1000, //15 minutes in ms
-			breakCount: 2,
-			breakLength: 20*1000, //20s
+			timerLength: 5*60*1000, //5 minutes in ms
 			paused: false,
 			started: false,
+			playImage: playImage,
+			currentAuthor: "",
+			currentWork: "",
+			currentSection: "",
+			currentURL: "", 
 			showSettings: false,
-			playImage: playImage
-		}
 
+		}
+		this.timer.timerLength = this.state.timerLength
 
 		this.convertMillisecondsToString = this.convertMillisecondsToString.bind(this)
-		this.populateBreaks = this.populateBreaks.bind(this)
-
-		this.minutesRef = React.createRef()
-		this.secondsRef = React.createRef()
-		this.breakCountRef = React.createRef()
+		this.handleKeyDown = this.handleKeyDown.bind(this)
+		this.handlePlayPause = this.handlePlayPause.bind(this)
 	}
 
-	populateBreaks() {
-		this.breaks = []
-		console.log("populating breaks")
-		for(let i = 0; i < this.state.breakCount; i++) {
-			let breakTimerStart = new Timer()
-			let breakTimerEnd = new Timer()
-			let interval = this.timer.timerLength / (this.state.breakCount+1)
-			console.log(interval)
-			breakTimerStart.timerLength = (interval*(i+1)-this.state.breakLength/2)
+	playSounds() {
+		this.meditationAudio = new Audio(this.state.currentURL)
+		this.bellAudio = new Audio(BELL_URL)
 
-			breakTimerEnd.timerLength = (interval*(i+1)+this.state.breakLength/2)
-
-			breakTimerStart.onFinish = breakTimerEnd.onFinish = () => {
-				let audio = new Audio(bellSound)
-				audio.play()
-				console.log("on finish in break")
+		this.bellAudio.onended = () => {
+			this.meditationAudio.onended = () => {
+				this.bellAudio.onended = () => {}
+				this.bellAudio.play()
 			}
-
-			breakTimerStart.onUpdate = breakTimerEnd.onUpdate = () => {}
-			this.breaks.push(breakTimerStart)
-			this.breaks.push(breakTimerEnd)
-
+			this.meditationAudio.play()
 		}
-		console.log(this.breaks)
+		this.bellAudio.play()
 	}
+
+	componentDidMount() {
+		document.addEventListener("keydown", this.handleKeyDown)
+		let axios = require('axios')
+		axios.get(API_URL)
+		.then((response) => {
+			let catalog = response.data
+			this.setState({
+				catalog: catalog,
+				currentAuthor: catalog[0].name,
+				currentWork: catalog[0].works[0].name,
+				currentSection: catalog[0].works[0].sections[0].number,
+				currentURL: catalog[0].works[0].sections[0].url
+			})
+		})
+		.catch((e) => {
+			console.log(e)
+		})
+	}
+
+	handleKeyDown(evt) {
+		switch(evt.keyCode) {
+			case 38: //up arrow
+				this.setState((prevState) => {
+					this.timer.timerLength = prevState.timerLength+5*60*1000
+					return {timerLength: prevState.timerLength+5*60*1000}
+				})
+				break;
+			case 40: //down arrow
+				this.setState((prevState) => {
+					this.timer.timerLength = prevState.timerLength-5*60*1000
+					return {timerLength: prevState.timerLength-5*60*1000}
+				})
+				break;
+			case 32:
+				this.handlePlayPause();
+				break;
+		}
+	}
+
+	handlePlayPause() {
+		this.setState((prevState) => {
+			if(prevState.started === false) { //need to play
+				this.playSounds()
+				this.timer.start();
+				return {playImage: pauseImage, started: true, paused: false}
+
+			} else if(prevState.paused === false && prevState.started === true){
+				this.timer.pause()
+				this.bellAudio.pause()
+				this.meditationAudio.pause()
+				return {playImage: playImage, paused: true}
+
+			} else if(prevState.paused === true && prevState.started === true) {
+				this.timer.start()
+				this.meditationAudio.play();
+				return {playImage: pauseImage, started: true, paused: false}
+
+			}
+		})	
+
+
+	}
+
+
+
 
 	convertMillisecondsToString(ms) {
 		//get minutes
@@ -145,123 +195,153 @@ class TimerUI extends React.Component {
 		return minStr + ":" + secStr;
 	}
 
+	render() {
+		//todo, save the full work/author/etc. in state
+		let authors, works, sections = []
+
+		
+		if(this.state.catalog) {
+			authors = this.state.catalog.map((authorObj) => (
+				<option key={authorObj.name}>{authorObj.name}</option>
+				))
+		//object representation of the current author
+		let currentAuthorObject = this.state.catalog
+		.find((authorObj) => (authorObj.name === this.state.currentAuthor))
+		
+		//object representation of the current work
+		let currentWorkObject = currentAuthorObject.works
+		.find((workObj) => (workObj.name === this.state.currentWork))
+
+		//get the works of the current author
+		works = currentAuthorObject
+		.works
+		.map((workObj) => (
+			<option key={currentAuthorObject.name+"-"+workObj.name}>{workObj.name}</option>
+			))
+
+		//get the sections of the currently selected work
+		sections = currentWorkObject.sections.map((sectionObj) => (
+			<option key={sectionObj.number}>{sectionObj.number}</option>
+			))
+	}
+
+
+
+
+
+
+
+
+	return(
+		<Container style={{marginTop: "10%"}} lg={12}>
+		<Row style={{textAlign: "center"}}>
+		<Col>
+		<Button size="lg" onClick={(evt) => {this.setState({showSettings: true})}} variant="light">{this.state.currentAuthor}, <em>{this.state.currentWork}</em>, {this.state.currentSection}</Button>
+		</Col>
+
+		</Row>
+		<Row style={{marginTop: "4%", textAlign: "center"}}>
+
+		<Col lg={{span:1, offset:5, marginLeft: "10%"}}>
+		<h1>{this.convertMillisecondsToString(this.state.timerLength-this.state.elapsedTime)}</h1>
+
+		</Col>
+		</Row>
+
+
+		<Row style={{justifyContent: "center", marginTop: "3%"}}>
+		<Button style={{marginRight: "1%"}} variant="light"><Image onClick={() => {
+						//handle this logic better for pausing, etc.
+						this.handlePlayPause()
+						
+					}} src={this.state.playImage} /></Button>
+
+					<Button variant="light"><Image onClick={() => {
+						if(this.meditationAudio) {
+							this.meditationAudio.pause();
+							this.meditationAudio.load();
+						}
+						if(this.bellAudio) {
+							this.bellAudio.pause();
+							this.bellAudio.load();
+						}
+						this.timer.stop(); 
+						this.setState({playImage: playImage, started: false, paused: false}
+							)}
+					} 
+
+					src={stopImage}/></Button>
+					</Row>
+					<Modal onHide={(evt) => {this.setState({showSettings: false})}}show={this.state.showSettings}>
+					<Modal.Header closeButton>
+					<Modal.Title>Settings</Modal.Title>
+					</Modal.Header>
+
+					<Modal.Body>
+					<Row style={{}}>
+					<Col lg={8}>
+					<Form>
+					<Form.Row>
+					<Form.Group as={Col}>
+					<Form.Label>Author</Form.Label>
+					<Form.Control as="select" onChange={(evt) => 
+						{this.setState({currentAuthor: evt.target.value})
+					}}>
+					{authors}
+					</Form.Control>
+					</Form.Group>
+
+					<Form.Group as={Col}>
+					<Form.Label>Work</Form.Label>
+					<Form.Control as="select" onChange={(evt) => 
+						{this.setState({currentWork: evt.target.value})
+					}}>
+					{works}
+					</Form.Control>
+					</Form.Group>
+
+					<Form.Group as={Col}>
+					<Form.Label>Section</Form.Label>
+					<Form.Control as="select" value={this.state.currentSection} onChange={(evt) => {
+						let value = evt.target.value	
+						this.setState((prevState) =>{
+							let [author, work, section] = [this.state.currentAuthor, this.state.currentWork, value]
+							let url= prevState.catalog.find((authorObj) => (authorObj.name === author))
+							.works
+							.find((workObj) => (workObj.name === work))
+							.sections
+							.find((sectionObj) => (sectionObj.number === section)).url
+
+							return {currentSection: value,
+								currentURL: url}										
+							})
+					}}>
+					{sections}
+					</Form.Control>
+					</Form.Group>
+					</Form.Row>
+
+					</Form>
+					</Col>
+					</Row>
+					</Modal.Body>
+					</Modal>
+					</Container>
+
+					);
+}
+
+}
+
+
+class App extends React.Component {
 	
 
 	render() {
-
-		const handleHide = () => {this.setState({showSettings: false})}
-		const handleShow = () => {this.setState({showSettings: true})}
-		const handleSave = () => {
-			
-			let minutes = parseInt(this.minutesRef.current.value, 10)
-			let seconds = parseInt(this.secondsRef.current.value, 10)
-			console.log("mins:\t" + minutes)
-			console.log("secs:\t" + seconds)
-			this.timer.timerLength = (minutes*60+seconds)*1000
-			this.setState({
-				showSettings: false, 
-				timerLength: this.timer.timerLength
-			})};
-
-			const handleKeyPress = (evt) => {
-				if(evt.key === 'Enter') {
-					handleSave()
-				}
-			}
-
-			const handlePlayPauseSwap = () => {
-				this.setState((prevState) => {
-					//not started
-					if(!prevState.started) {
-						let audio = new Audio(bellSound)
-						audio.play()
-						this.timer.start()
-						this.populateBreaks()
-						this.breaks.forEach((breakTimer) => {console.log("starting breaks");breakTimer.start()})
-						return {paused: false, playImage: pauseImage, started: true}
-
-					} else {
-						if(prevState.paused) {
-							this.timer.start()
-							this.breaks.forEach((breakTimer) => {breakTimer.start()})
-							return {paused: false, playImage: pauseImage, started: true}
-						} else {
-							this.timer.pause()
-							this.breaks.forEach((breakTimer) => {breakTimer.pause()})
-							return {paused: true, playImage: playImage, started: true}
-						}
-					}
-				});
-
-			};
-
-			return(
-				<Container lg={12}>
-				<Row style={{marginTop: "10%", textAlign: "center"}}>
-
-				<Col lg={{span:1, offset:5, marginLeft: "10%"}}>
-				<h1 onClick={() => {this.setState({showSettings: true})}}>{this.convertMillisecondsToString(this.state.timerLength-this.state.elapsedTime)}</h1>
-
-				</Col>
-				</Row >
-
-
-
-				
-				<Row style={{marginTop: "10%", textAlign: "center"}}>
-				<Col lg={{span:2, offset: 4}} md={{offset: 4, span:2}}><Button variant="secondary" onClick={handlePlayPauseSwap}><Image src={this.state.playImage} /></Button></Col>
-				<Col lg={{span:2}} md={{span:2}} ><Button variant="secondary"><Image onClick={() => {this.timer.stop()}} src={stopImage}/></Button></Col>
-				</Row>
-				<Row>
-				<Col>
-				<Modal show={this.state.showSettings} onHide={handleHide}>
-				<Modal.Dialog>
-				<Modal.Header closeButton>
-				Settings
-				</Modal.Header>
-
-				<Modal.Body>
-				<Form onKeyDown={(evt) => (handleKeyPress(evt))}>
-				<Form.Row>
-				<Col>
-				<Form.Control ref={this.minutesRef} defaultValue={Math.floor(this.state.timerLength / 1000/ 60)}  />
-				</Col>
-				<Col>
-				<Form.Control ref={this.secondsRef} defaultValue={Math.floor(this.state.timerLength / 1000) % 60 } />
-				</Col>
-				</Form.Row>
-
-				<Form.Row>
-				<Form.Control ref={this.breakCountRef} placeholder={this.state.breakCount} />
-				</Form.Row>
-				</Form>
-
-				</Modal.Body>
-
-				<Modal.Footer>
-				<Button variant="secondary" onClick={() => {this.setState({showSettings: false})}}>Close</Button>
-				<Button variant="primary" onClick={handleSave}>Save</Button>
-				</Modal.Footer>
-				</Modal.Dialog>
-				</Modal>
-				</Col>
-				</Row>
-				</Container>
-
-				);
-		}
-
+		return (
+			<TimerUI />
+			);
 	}
+}
 
-
-	class App extends React.Component {
-
-
-		render() {
-			return (
-				<TimerUI />
-				);
-		}
-	}
-
-	export default App;
+export default App;
