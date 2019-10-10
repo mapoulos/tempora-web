@@ -82,7 +82,7 @@ class TimerUI extends React.Component {
 		}
 		this.state = {
 			elapsedTime: 0,
-			timerLength: 5*60*1000, //15 minutes in ms
+			timerLength: 5*60*1000, //5 minutes in ms
 			paused: false,
 			started: false,
 			playImage: playImage,
