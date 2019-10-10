@@ -89,7 +89,6 @@ class TimerUI extends React.Component {
 			currentAuthor: "",
 			currentWork: "",
 			currentSection: "",
-			currentURL: "", 
 			showSettings: false,
 
 		}
@@ -98,10 +97,15 @@ class TimerUI extends React.Component {
 		this.convertMillisecondsToString = this.convertMillisecondsToString.bind(this)
 		this.handleKeyDown = this.handleKeyDown.bind(this)
 		this.handlePlayPause = this.handlePlayPause.bind(this)
+		this.getAuthorNames = this.getAuthorNames.bind(this)
+		this.getWorkNames = this.getWorkNames.bind(this)
+		this.getSectionNumbers = this.getSectionNumbers.bind(this)
+		this.getSection = this.getSection.bind(this)
 	}
 
 	playSounds() {
-		this.meditationAudio = new Audio(this.state.currentURL)
+		let currentURL = this.getSection(this.state.currentAuthor, this.state.currentWork, this.state.currentSection).url
+		this.meditationAudio = new Audio(currentURL)
 		this.bellAudio = new Audio(BELL_URL)
 
 		this.bellAudio.onended = () => {
@@ -114,18 +118,86 @@ class TimerUI extends React.Component {
 		this.bellAudio.play()
 	}
 
+	getAuthorNames() {
+		if(this.state.catalog) {
+			return this.state.catalog.map((author) => (author.name))
+		} else {
+			return []
+		}
+	}
+
+	getWorkNames(authorName) {
+		if(this.state.catalog) {
+			return this.state.catalog[authorName].works.map((work) => (work.name))
+		} else {
+			return []
+		}
+	}
+
+	getSectionNumbers(authorName, workName) {
+		if(this.state.catalog) {
+			return this.state.catalog[authorName].works[workName].map((section) => (section.number))
+		} else {
+			return []
+		}
+	}
+
+	getSection(authorName, workName, sectionNumber) {
+		if(this.state.catalog) {
+			return this.state.catalog[authorName].works[workName].sections[sectionNumber]
+		} else {
+			return []
+		}
+	}
+
 	componentDidMount() {
 		document.addEventListener("keydown", this.handleKeyDown)
 		let axios = require('axios')
 		axios.get(API_URL)
 		.then((response) => {
-			let catalog = response.data
+			console.log(response.data)
+			let catalog = response.data.reduce((curAuthorDictionary,author) => {
+				console.log(curAuthorDictionary)
+				curAuthorDictionary[author.name] = author
+
+				let workDictionary = author.works.reduce((curWorkDict,work) => {
+					curWorkDict[work.name] = work
+					let sectionDictionary = work.reduce((curSectionDict, section,curIndex) => {
+						//create, in effect, a doubly linked list to ease
+						//moving back and forth
+						if(curIndex < work.sections.length) {
+							section.nextSection = work.sections[curIndex + 1]
+						} else {
+							section.nextSection = work.sections[0]
+						}
+
+						if(curIndex > 0) {
+							section.prevSection = work.sections[curIndex - 1]
+						} else {
+							const sectionCount = work.sections.length
+							section.prevSection = work.sections[sectionCount-1]
+						}
+						curSectionDict[section.number] = section
+
+						return curSectionDict
+
+					})
+
+					curWorkDict[work.name].sections = sectionDictionary
+					return curWorkDict
+				})
+				curAuthorDictionary[author.name].works = workDictionary
+				return curAuthorDictionary
+			})
+			// set initial value to first
+			let authorName = this.getAuthorNames()[0]
+			let workName = this.getWorkNames(authorName)[0]
+			let sectionNumber = this.getSectionNumbers(authorName,workName)[0]
 			this.setState({
 				catalog: catalog,
-				currentAuthor: catalog[0].name,
-				currentWork: catalog[0].works[0].name,
-				currentSection: catalog[0].works[0].sections[0].number,
-				currentURL: catalog[0].works[0].sections[0].url
+				currentAuthor: authorName,
+				currentWork: workName,
+				currentSection: sectionNumber,
 			})
 		})
 		.catch((e) => {
@@ -201,28 +273,18 @@ class TimerUI extends React.Component {
 
 		
 		if(this.state.catalog) {
-			authors = this.state.catalog.map((authorObj) => (
-				<option key={authorObj.name}>{authorObj.name}</option>
-				))
-		//object representation of the current author
-		let currentAuthorObject = this.state.catalog
-		.find((authorObj) => (authorObj.name === this.state.currentAuthor))
+			authors = this.getAuthorNames().map((authorName) => (
+				<option key={authorName.name}>{authorName}</option>
+			))
+
+			works = this.getWorkNames(this.state.currentAuthor).map((workName) => (
+					<option key={workName}>{workName}</option>
+			))
+
+			sections = this.getSectionNumbers(this.state.currentAuthor, this.state.currentWork).map((sectionNumber) => (
+				<option key={sectionNumber}>{sectionNumber}</option>
+			))			
 		
-		//object representation of the current work
-		let currentWorkObject = currentAuthorObject.works
-		.find((workObj) => (workObj.name === this.state.currentWork))
-
-		//get the works of the current author
-		works = currentAuthorObject
-		.works
-		.map((workObj) => (
-			<option key={currentAuthorObject.name+"-"+workObj.name}>{workObj.name}</option>
-			))
-
-		//get the sections of the currently selected work
-		sections = currentWorkObject.sections.map((sectionObj) => (
-			<option key={sectionObj.number}>{sectionObj.number}</option>
-			))
 	}
 
 
@@ -304,17 +366,7 @@ class TimerUI extends React.Component {
 					<Form.Label>Section</Form.Label>
 					<Form.Control as="select" value={this.state.currentSection} onChange={(evt) => {
 						let value = evt.target.value	
-						this.setState((prevState) =>{
-							let [author, work, section] = [this.state.currentAuthor, this.state.currentWork, value]
-							let url= prevState.catalog.find((authorObj) => (authorObj.name === author))
-							.works
-							.find((workObj) => (workObj.name === work))
-							.sections
-							.find((sectionObj) => (sectionObj.number === section)).url
-
-							return {currentSection: value,
-								currentURL: url}										
-							})
+						this.setState({currentSection: value})
 					}}>
 					{sections}
 					</Form.Control>
