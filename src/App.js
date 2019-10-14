@@ -75,7 +75,7 @@ class TimerUI extends React.Component {
 		this.timer = new Timer()
 		this.timer.onFinish = () => {
 			this.playSounds()
-			this.setState({elapsedTime: 0, paused: false, started: false})
+			this.setState({elapsedTime: 0, paused: false, started: false, playImage: playImage})
 		}
 		this.timer.onUpdate = () => {
 			this.setState({elapsedTime: this.timer.elapsedTime})
