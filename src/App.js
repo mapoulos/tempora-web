@@ -207,6 +207,7 @@ class TimerUI extends React.Component {
 		//object representation of the current author
 		let currentAuthorObject = this.state.catalog
 		.find((authorObj) => (authorObj.name === this.state.currentAuthor))
+
 		
 		//object representation of the current work
 		let currentWorkObject = currentAuthorObject.works
@@ -284,8 +285,14 @@ class TimerUI extends React.Component {
 					<Form.Row>
 					<Form.Group as={Col}>
 					<Form.Label>Author</Form.Label>
-					<Form.Control as="select" onChange={(evt) => 
-						{this.setState({currentAuthor: evt.target.value})
+					<Form.Control as="select" onChange={(evt) => {
+						let value = evt.target.value
+						let currentAuthorObject = this.state.catalog
+							.find((authorObj) => (authorObj.name === value))
+						this.setState({currentAuthor: value, 
+							currentWork: currentAuthorObject.works[0].name,
+							currentSection: currentAuthorObject.works[0].sections[0].number
+						})
 					}}>
 					{authors}
 					</Form.Control>
@@ -293,8 +300,10 @@ class TimerUI extends React.Component {
 
 					<Form.Group as={Col}>
 					<Form.Label>Work</Form.Label>
-					<Form.Control as="select" onChange={(evt) => 
-						{this.setState({currentWork: evt.target.value})
+					<Form.Control as="select" onChange={(evt) => {
+						let value = evt.target.value
+						this.setState({currentWork: value}
+						)
 					}}>
 					{works}
 					</Form.Control>
