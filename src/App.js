@@ -19,6 +19,17 @@ const API_URL = "https://mp22l1ux2d.execute-api.us-east-1.amazonaws.com/default/
 const BELL_URL = "https://s3.amazonaws.com/tempora-pray-web-bucket/bells/Ship_Bell_mono.mp3"
 
 
+const globals = {
+	redirect_uri: "https://tempora-dev.equul.us",
+	client_id: "4gieati135clevrkumggma288s"
+}
+
+// const globals = {
+// 	redirect_uri: "http://localhost:3000",
+// 	client_id: "3ieiooqbtve32tm76k5mkb6g6a"
+// }
+
+
 class Timer {
 	constructor() {
 		this.elapsedTime = 0
@@ -149,8 +160,8 @@ class TimerUI extends React.Component {
 			console.log(parsed.code)
 			const data = {
 				"grant_type" : "authorization_code",
-				"client_id" : "3ieiooqbtve32tm76k5mkb6g6a",
-				"redirect_uri" : "http://localhost:3000",
+				"client_id" : globals.client_id,
+				"redirect_uri" : globals.redirect_uri,
 				code: parsed.code
 
 			}
@@ -291,7 +302,7 @@ class TimerUI extends React.Component {
 		<Container style={{marginTop: "1%"}} lg={12}>
 		<Row>
 			<Col>
-				<Navbar bg="light" expand="lg">
+				<Navbar bg="dark" variant="dark" expand="lg">
 				<Navbar.Brand href="#home">Tempora</Navbar.Brand>
 				<Navbar.Collapse className="justify-content-end">
 					<Navbar.Text style={{display: (this.state.loggedIn) ? "block" : "none"}}>
@@ -306,7 +317,7 @@ class TimerUI extends React.Component {
 		</Row>
 		<Row style={{textAlign: "center", marginTop: "1%"}}>
 		<Col>
-		<Button size="lg" onClick={(evt) => {this.setState({showSettings: true})}} variant="light">{this.state.currentAuthor}, <em>{this.state.currentWork}</em>, {this.state.currentSection}</Button>
+		<Button size="lg" onClick={(evt) => {this.setState({showSettings: true})}} variant="primary">{this.state.currentAuthor}, <em>{this.state.currentWork}</em>, {this.state.currentSection}</Button>
 		</Col>
 
 		</Row>
@@ -320,13 +331,13 @@ class TimerUI extends React.Component {
 
 
 		<Row style={{justifyContent: "center", marginTop: "3%"}}>
-		<Button style={{marginRight: "1%"}} variant="light"><Image onClick={() => {
+		<Button style={{marginRight: "1%"}} variant="primary"><Image onClick={() => {
 						//handle this logic better for pausing, etc.
 						this.handlePlayPause()
 						
 					}} src={this.state.playImage} /></Button>
 
-					<Button variant="light"><Image onClick={() => {
+					<Button variant="primary"><Image onClick={() => {
 						if(this.meditationAudio) {
 							this.meditationAudio.pause();
 							this.meditationAudio.load();
