@@ -9,12 +9,15 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 //import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
+import Navbar from 'react-bootstrap/Navbar';
 import Form from 'react-bootstrap/Form';
 import Image from 'react-bootstrap/Image';
 import Modal from 'react-bootstrap/Modal';
-
+import {createBrowserHistory } from 'history';
+import User from './User.js'
 const API_URL = "https://mp22l1ux2d.execute-api.us-east-1.amazonaws.com/default/tempora-pray-getcatalog"
 const BELL_URL = "https://s3.amazonaws.com/tempora-pray-web-bucket/bells/Ship_Bell_mono.mp3"
+
 
 class Timer {
 	constructor() {
@@ -91,6 +94,7 @@ class TimerUI extends React.Component {
 			currentSection: "",
 			currentURL: "", 
 			showSettings: false,
+			loggedIn: false,
 
 		}
 		this.timer.timerLength = this.state.timerLength
@@ -131,6 +135,51 @@ class TimerUI extends React.Component {
 		.catch((e) => {
 			console.log(e)
 		})
+
+		const qs = require('query-string')
+		const parsed = qs.parse(window.location.search)
+		if(parsed.code && this.state.loggedIn === false) {
+			//get a code
+			//url: https://tempora.auth.us-east-1.amazoncognito.com/oauth2/token
+			let axios = require('axios')
+			axios.interceptors.request.use(request => {
+			  console.log('Starting Request', request)
+			  return request
+			})
+			console.log(parsed.code)
+			const data = {
+				"grant_type" : "authorization_code",
+				"client_id" : "3ieiooqbtve32tm76k5mkb6g6a",
+				"redirect_uri" : "http://localhost:3000",
+				code: parsed.code
+
+			}
+			const options = {
+				method: 'POST',
+				headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+				data: qs.stringify(data),
+				url: "https://tempora.auth.us-east-1.amazoncognito.com/oauth2/token"
+
+			}
+
+			axios(options)
+			.then((result) => {
+				console.log(result.data)
+				console.log("Logged in")
+				console.log(result.data)
+				const history = createBrowserHistory()
+				history.push("/")
+				let idTokenData = User.decodeToken(result.data.id_token)
+				let accessTokenData = User.decodeToken(result.data.access_token)
+				this.setState({loggedIn: true, accessToken: result.data.access_token, idToken: result.data.id_token, username: idTokenData.email})
+				
+
+				
+			})
+			.catch((err) => {
+				console.log(err.response.data)
+			})
+		}
 	}
 
 	handleKeyDown(evt) {
@@ -196,14 +245,19 @@ class TimerUI extends React.Component {
 	}
 
 	render() {
+		
+
 		//todo, save the full work/author/etc. in state
 		let authors, works, sections = []
+
 
 		
 		if(this.state.catalog) {
 			authors = this.state.catalog.map((authorObj) => (
 				<option key={authorObj.name}>{authorObj.name}</option>
 				))
+
+		
 		//object representation of the current author
 		let currentAuthorObject = this.state.catalog
 		.find((authorObj) => (authorObj.name === this.state.currentAuthor))
@@ -232,10 +286,25 @@ class TimerUI extends React.Component {
 
 
 
-
+	//TODO get username to signin
 	return(
-		<Container style={{marginTop: "10%"}} lg={12}>
-		<Row style={{textAlign: "center"}}>
+		<Container style={{marginTop: "1%"}} lg={12}>
+		<Row>
+			<Col>
+				<Navbar bg="light" expand="lg">
+				<Navbar.Brand href="#home">Tempora</Navbar.Brand>
+				<Navbar.Collapse className="justify-content-end">
+					<Navbar.Text style={{display: (this.state.loggedIn) ? "block" : "none"}}>
+					Signed in as: <a href="#login">{this.state.username}</a>
+					</Navbar.Text>
+					<Navbar.Text style={{display: (this.state.loggedIn) ? "none" : "block"}}>
+						<a href="https://tempora.auth.us-east-1.amazoncognito.com/login?client_id=3ieiooqbtve32tm76k5mkb6g6a&response_type=code&scope=openid+phone+email+aws.cognito.signin.user.admin+profile&redirect_uri=http://localhost:3000">Login</a>
+					</Navbar.Text>
+				</Navbar.Collapse>
+				</Navbar>
+			</Col>
+		</Row>
+		<Row style={{textAlign: "center", marginTop: "1%"}}>
 		<Col>
 		<Button size="lg" onClick={(evt) => {this.setState({showSettings: true})}} variant="light">{this.state.currentAuthor}, <em>{this.state.currentWork}</em>, {this.state.currentSection}</Button>
 		</Col>
