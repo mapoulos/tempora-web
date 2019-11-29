@@ -19,10 +19,13 @@ const API_URL = "https://mp22l1ux2d.execute-api.us-east-1.amazonaws.com/default/
 const BELL_URL = "https://s3.amazonaws.com/tempora-pray-web-bucket/bells/Ship_Bell_mono.mp3"
 
 
-const globals = {
+let globals = {
 	redirect_uri: "https://tempora-dev.equul.us",
 	client_id: "4gieati135clevrkumggma288s"
+
 }
+
+globals.login_url = `https://tempora.auth.us-east-1.amazoncognito.com/login?client_id=${globals.client_id}&response_type=code&scope=openid+phone+email+aws.cognito.signin.user.admin+profile&redirect_uri=${globals.redirect_uri}`
 
 // const globals = {
 // 	redirect_uri: "http://localhost:3000",
@@ -309,7 +312,7 @@ class TimerUI extends React.Component {
 					Signed in as: <a href="#login">{this.state.username}</a>
 					</Navbar.Text>
 					<Navbar.Text style={{display: (this.state.loggedIn) ? "none" : "block"}}>
-						<a href="https://tempora.auth.us-east-1.amazoncognito.com/login?client_id=3ieiooqbtve32tm76k5mkb6g6a&response_type=code&scope=openid+phone+email+aws.cognito.signin.user.admin+profile&redirect_uri=http://localhost:3000">Login</a>
+						<a href={globals.login_url}>Login</a>
 					</Navbar.Text>
 				</Navbar.Collapse>
 				</Navbar>
