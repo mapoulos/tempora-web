@@ -5,8 +5,11 @@
   "dependencies": {
     "@aws-amplify/cli": "^3.11.0",
     "aws-amplify": "^1.1.40",
+    "aws-sdk": "^2.580.0",
     "bootstrap": "^4.3.1",
-    "node-id3": "^0.1.11",
+    "history": "^4.10.1",
+    "jwt-decode": "^2.2.0",
+    "query-string": "^6.9.0",
     "react": "^16.8.6",
     "react-bootstrap": "^1.0.0-beta.9",
     "react-dom": "^16.8.6",
