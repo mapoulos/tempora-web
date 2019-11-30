@@ -7,14 +7,17 @@ import stopImage from './images/icons8-stop-50.png'
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
-//import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
 import Form from 'react-bootstrap/Form';
 import Image from 'react-bootstrap/Image';
 import Modal from 'react-bootstrap/Modal';
+import Timer from './Timer'
 import {createBrowserHistory } from 'history';
+import {Provider} from 'react-redux'
+import {createStore} from 'redux'
+import temporaApp from './reducers'
 import User from './User.js'
 const API_URL = "https://mp22l1ux2d.execute-api.us-east-1.amazonaws.com/default/tempora-pray-getcatalog"
 const BELL_URL = "https://s3.amazonaws.com/tempora-pray-web-bucket/bells/Ship_Bell_mono.mp3"
@@ -50,59 +53,41 @@ setEnv()
 
 globals.login_url = `https://tempora.auth.us-east-1.amazoncognito.com/login?client_id=${globals.client_id}&response_type=code&scope=openid+phone+email+aws.cognito.signin.user.admin+profile&redirect_uri=${globals.redirect_uri}`
 
-// const globals = {
-// 	redirect_uri: "http://localhost:3000",
-// 	client_id: "3ieiooqbtve32tm76k5mkb6g6a"
-// }
 
-
-class Timer {
-	constructor() {
-		this.elapsedTime = 0
-		this.timerLength = 1*60*1000
-		this.isRunning = false
-		this.timeStarted = 0
-		this.onFinish = () => {}
-		this.onUpdate = () => {}
-		this.intervalId = 0
-	}
-
-	start() {
-		if(this.isRunning === false) {
-			this.isRunning = true
-			var elapsedTime = this.elapsedTime
-			this.timeStarted = Date.now()
-
-			this.intervalId = window.setInterval((timer) => {
-				timer.elapsedTime = Date.now() - timer.timeStarted + elapsedTime
-				if(timer.elapsedTime >= timer.timerLength) {
-					timer.stop()
-					
-					timer.onFinish()
-					
-				} else {
-					timer.onUpdate()
-				}
-
-			}, 1000, this)
-		}
-	}
-
-
-	pause() {
-		this.isRunning = false
-		window.clearInterval(this.intervalId)
-	}
-
-	stop() {
-		this.isRunning = false
-		this.elapsedTime = 0
-		this.onUpdate()
-		window.clearInterval(this.intervalId)
-	}
+const store = createStore(temporaApp)
 
 
 
+
+
+function TemporaNavBar(props) {
+	return(
+		<Row>
+			<Col sm={12}>
+				<Navbar bg="dark" variant="dark" expand="sm">
+				<Navbar.Brand href="#home">Tempora</Navbar.Brand>
+				<Navbar.Toggle aria-controls="basic-navbar-nav" />
+				
+				<Navbar.Collapse className="justify-content-end">
+					<Nav className="mr-auto">
+					<Nav.Link href="#about">About</Nav.Link>
+					<Nav.Link href="#library">Library</Nav.Link>
+					<Nav.Link href={globals.login_url} style={{display: (props.loggedIn) ? "none" : "block"}}>
+						Sign In/Register
+					</Nav.Link>
+					<Nav.Link href="#profile" 
+						onClick={props.onProfileClick()}
+						style={{display: (props.loggedIn) ? "block" : "none"}}>
+						Profile ({props.username})
+					</Nav.Link>
+				
+					</Nav>
+				</Navbar.Collapse>
+				
+				</Navbar>
+			</Col>
+		</Row>
+	);
 }
 
 class TimerUI extends React.Component {
@@ -208,6 +193,7 @@ class TimerUI extends React.Component {
 				history.push("/")
 				let idTokenData = User.decodeToken(result.data.id_token)
 				let accessTokenData = User.decodeToken(result.data.access_token)
+				// store.dispatch(login({idToken: idTokenData, accessToken: accessTokenData})
 				this.setState({loggedIn: true, accessToken: result.data.access_token, idToken: result.data.id_token, username: idTokenData.email})
 				
 
@@ -326,29 +312,7 @@ class TimerUI extends React.Component {
 	//TODO get username to signin
 	return(
 		<Container style={{marginTop: "1%"}} lg={12}>
-		<Row>
-			<Col sm={12}>
-				<Navbar bg="dark" variant="dark" expand="sm">
-				<Navbar.Brand href="#home">Tempora</Navbar.Brand>
-				<Navbar.Toggle aria-controls="basic-navbar-nav" />
-				
-				<Navbar.Collapse className="justify-content-end">
-					<Nav className="mr-auto">
-					<Nav.Link href="#about">About</Nav.Link>
-					<Nav.Link href="#library">Library</Nav.Link>
-					<Nav.Link href={globals.login_url} style={{display: (this.state.loggedIn) ? "none" : "block"}}>
-						Sign In/Register
-					</Nav.Link>
-					<Nav.Link href="#profile" style={{display: (this.state.loggedIn) ? "block" : "none"}}>
-						Profile ({this.state.username})
-					</Nav.Link>
-				
-					</Nav>
-				</Navbar.Collapse>
-				
-				</Navbar>
-			</Col>
-		</Row>
+		<TemporaNavBar loggedIn={this.state.loggedIn} username={this.state.email} onProfileClick={() => {return "";}}/>
 		<Row style={{textAlign: "center", marginTop: "1%"}}>
 		<Col>
 		<Button size="lg" onClick={(evt) => {this.setState({showSettings: true})}} variant="primary">{this.state.currentAuthor}, <em>{this.state.currentWork}</em>, {this.state.currentSection}</Button>
@@ -457,12 +421,16 @@ class TimerUI extends React.Component {
 }
 
 
+
+
 class App extends React.Component {
 	
 
 	render() {
 		return (
+			<Provider store={store}>
 			<TimerUI />
+			</Provider>
 			);
 	}
 }
