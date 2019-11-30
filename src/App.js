@@ -10,6 +10,7 @@ import Col from 'react-bootstrap/Col';
 //import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
 import Navbar from 'react-bootstrap/Navbar';
+import Nav from 'react-bootstrap/Nav';
 import Form from 'react-bootstrap/Form';
 import Image from 'react-bootstrap/Image';
 import Modal from 'react-bootstrap/Modal';
@@ -20,10 +21,32 @@ const BELL_URL = "https://s3.amazonaws.com/tempora-pray-web-bucket/bells/Ship_Be
 
 
 let globals = {
-	redirect_uri: "https://tempora-dev.equul.us",
+	redirect_uri: "https://tempora.equul.us",
 	client_id: "4gieati135clevrkumggma288s"
-
 }
+
+let setEnv = ()  => {
+	if(window.location.toString().startsWith('http://localhost')) {
+		//we're local
+		globals = {
+			redirect_uri: "http://localhost:3000",
+			client_id: 	"3ieiooqbtve32tm76k5mkb6g6a",
+			
+		}
+	} else if(window.location.toString().startsWith('https://tempora-dev')) {
+		// developmen
+		globals = {
+			redirect_uri: "https://tempora-dev.equul.us",
+			client_id: "4gieati135clevrkumggma288s"
+		}
+	} else {
+		globals = {
+			redirect_uri: "https://tempora.equul.us",
+			client_id: "4gieati135clevrkumggma288s"
+		}
+	}
+}
+setEnv()
 
 globals.login_url = `https://tempora.auth.us-east-1.amazoncognito.com/login?client_id=${globals.client_id}&response_type=code&scope=openid+phone+email+aws.cognito.signin.user.admin+profile&redirect_uri=${globals.redirect_uri}`
 
@@ -304,17 +327,25 @@ class TimerUI extends React.Component {
 	return(
 		<Container style={{marginTop: "1%"}} lg={12}>
 		<Row>
-			<Col>
-				<Navbar bg="dark" variant="dark" expand="lg">
+			<Col sm={12}>
+				<Navbar bg="dark" variant="dark" expand="sm">
 				<Navbar.Brand href="#home">Tempora</Navbar.Brand>
+				<Navbar.Toggle aria-controls="basic-navbar-nav" />
+				
 				<Navbar.Collapse className="justify-content-end">
-					<Navbar.Text style={{display: (this.state.loggedIn) ? "block" : "none"}}>
-					Signed in as: <a href="#login">{this.state.username}</a>
-					</Navbar.Text>
-					<Navbar.Text style={{display: (this.state.loggedIn) ? "none" : "block"}}>
-						<a href={globals.login_url}>Login</a>
-					</Navbar.Text>
+					<Nav className="mr-auto">
+					<Nav.Link href="#about">About</Nav.Link>
+					<Nav.Link href="#library">Library</Nav.Link>
+					<Nav.Link href={globals.login_url} style={{display: (this.state.loggedIn) ? "none" : "block"}}>
+						Sign In/Register
+					</Nav.Link>
+					<Nav.Link href="#profile" style={{display: (this.state.loggedIn) ? "block" : "none"}}>
+						Profile ({this.state.username})
+					</Nav.Link>
+				
+					</Nav>
 				</Navbar.Collapse>
+				
 				</Navbar>
 			</Col>
 		</Row>
